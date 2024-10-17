@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lego_collection_app/database_helper.dart';
 import 'package:lego_collection_app/models/lego_set.dart';
 
@@ -14,6 +15,7 @@ class EditLegoSetScreen extends StatefulWidget {
 }
 
 class _EditLegoSetScreenState extends State<EditLegoSetScreen> {
+  final ImagePicker _picker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
   String? _name;
   String? _officialPage;
@@ -47,6 +49,15 @@ class _EditLegoSetScreenState extends State<EditLegoSetScreen> {
 
       await DatabaseHelper().updateLegoSet(updatedLegoSet); // Atualiza o conjunto existente
       Navigator.pop(context, true); // Retorna para a tela anterior
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final XFile? image = await _picker.pickImage(source: source);
+    if (image != null) {
+      setState(() {
+        _imagePaths.add(image.path);
+      });
     }
   }
 
@@ -127,19 +138,40 @@ class _EditLegoSetScreenState extends State<EditLegoSetScreen> {
                 // Adicione um botão ou widget para adicionar imagens
                 SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {
-                    // Lógica para adicionar imagens
-                  },
-                  child: Text("Adicionar Imagens"),
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                  child: Text('Escolher da Galeria'),
+                ),
+                ElevatedButton(
+                  onPressed: () => _pickImage(ImageSource.camera),
+                  child: Text('Tirar Foto'),
                 ),
                 // Exibir as imagens adicionadas
                 Wrap(
                   spacing: 8.0,
                   children: _imagePaths.map((path) {
-                    return Image.file(
-                      File(path),
-                      width: 100,
-                      height: 100,
+                    return Stack(
+                      children: [
+                        Image.file(
+                          File(path),
+                          width: 100,
+                          height: 100,
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _imagePaths.remove(path);
+                              });
+                            },
+                            child: Icon(
+                              Icons.delete,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+                      ],
                     );
                   }).toList(),
                 ),

@@ -67,4 +67,14 @@ class DatabaseHelper {
     );
   }
 
+  Future<LegoSet> getLegoSetById(int? id) async {
+    final db = await database;
+    return db.query('lego_sets', where: 'id = ?', whereArgs: [id]).then((maps) {
+      if (maps.isNotEmpty) {
+        return LegoSet.fromMap(maps.first);
+      } else {
+        throw Exception('ID não encontrado');
+      }
+    });
+  }
 }

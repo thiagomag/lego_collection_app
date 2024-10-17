@@ -76,13 +76,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               );
             },
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              // Aguardando retorno da tela de detalhes
+              final updatedLegoSet = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => LegoSetDetailScreen(legoSet: legoSet),
                 ),
               );
+
+              // Atualiza o conjunto se houver alterações
+              if (updatedLegoSet != null && updatedLegoSet is LegoSet) {
+                setState(() {
+                  _updateLegoSet(updatedLegoSet);
+                });
+              }
             },
             child: ListTile(
               title: Text(legoSet.name),
@@ -105,5 +113,14 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Icon(Icons.add),
       ),
     );
+  }
+
+  void _updateLegoSet(LegoSet updatedSet) {
+    int index = _legoSets.indexWhere((set) => set.id == updatedSet.id);
+    if (index != -1) {
+      setState(() {
+        _legoSets[index] = updatedSet; // Atualiza o conjunto na lista
+      });
+    }
   }
 }

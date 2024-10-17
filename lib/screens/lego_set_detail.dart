@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lego_collection_app/database_helper.dart';
 import 'package:lego_collection_app/screens/edit_lego_set.dart';
 import '../models/lego_set.dart';
 import 'dart:io';
@@ -36,89 +37,101 @@ class _LegoSetDetailScreenState extends State<LegoSetDetailScreen> {
     }
   }
 
+  Future<void> _fetchUpdatedLegoSet() async {
+    // Atualiza o conjunto Lego
+    LegoSet updatedLegoSet = await DatabaseHelper().getLegoSetById(_legoSet.id);
+    setState(() {
+      _legoSet = updatedLegoSet;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_legoSet.name),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Nome: ${_legoSet.name}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Número de peças: ${_legoSet.pieces}',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Preço: R\$${_legoSet.price.toStringAsFixed(2)}',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 10),
-            if (_legoSet.officialPage.isNotEmpty)
-              GestureDetector(
-                onTap: () {
-                  _launchURL(_legoSet.officialPage);
-                },
-                child: Text(
-                  'Página oficial: ${_legoSet.officialPage}',
-                  style: TextStyle(fontSize: 16, color: Colors.blue),
-                ),
+    return WillPopScope(
+      onWillPop: () async {
+        // Retorna o conjunto atualizado ao sair
+        Navigator.pop(context, _legoSet);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_legoSet.name),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Nome: ${_legoSet.name}',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            SizedBox(height: 20),
-            Text('Imagens:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
-            _legoSet.imagePaths.isNotEmpty
-                ? SizedBox(
-              height: 150,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _legoSet.imagePaths.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: Image.file(
-                      File(_legoSet.imagePaths[index]),
-                      width: 150,
+              SizedBox(height: 10),
+              Text(
+                'Número de peças: ${_legoSet.pieces}',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Preço: R\$${_legoSet.price.toStringAsFixed(2)}',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 10),
+              if (_legoSet.officialPage.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    _launchURL(_legoSet.officialPage);
+                  },
+                  child: Text(
+                    'Página oficial: ${_legoSet.officialPage}',
+                    style: TextStyle(fontSize: 16, color: Colors.blue),
+                  ),
+                ),
+              SizedBox(height: 20),
+              Text('Imagens:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+              _legoSet.imagePaths.isNotEmpty
+                  ? SizedBox(
                       height: 150,
-                      fit: BoxFit.cover,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _legoSet.imagePaths.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Image.file(
+                              File(_legoSet.imagePaths[index]),
+                              width: 150,
+                              height: 150,
+                              fit: BoxFit.cover,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Text('Sem imagens disponíveis'),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  // Aguarda o retorno da tela de edição
+                  bool? updated = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          EditLegoSetScreen(legoSet: _legoSet),
                     ),
                   );
-                },
-              ),
-            )
-                : Text('Sem imagens disponíveis'),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                // Aguarda o retorno da tela de edição
-                bool? updated = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        EditLegoSetScreen(legoSet: _legoSet),
-                  ),
-                );
 
-                // Se houve uma atualização, recarrega os dados
-                if (updated == true) {
-                  setState(() {
-                    // Recarrega o conjunto atualizado
-                    _legoSet = _legoSet;  // Aqui você pode recarregar do banco de dados, se necessário
-                  });
-                }
-              },
-              child: Text('Editar coleção Lego'),
-            ),
-          ],
+                  // Se houve uma atualização, recarrega os dados
+                  if (updated == true) {
+                    await _fetchUpdatedLegoSet();
+                  }
+                },
+                child: Text('Editar coleção Lego'),
+              ),
+            ],
+          ),
         ),
       ),
     );
